@@ -2,35 +2,30 @@
 if (isset($_GET['status'])) {
     $status = $_GET['status'];
 
-    // Validasi hanya menerima "on" atau "off"
-    if ($status !== "on" && $status !== "off") {
-        echo json_encode(["success" => false, "error" => "Nilai harus 'on' atau 'off'"]);
-        exit();
-    }
+    if ($status === "on" || $status === "off") {
+        // URL Firebase Realtime Database (ganti sesuai project kamu)
+        $firebase_url = "https://monitoring-lampu-iot-212398-default-rtdb.firebaseio.com/iot_lampu_212398/lampu_status_212398.json";
 
-    // URL Firebase
-    $url = "https://lampu-iot-29a38-default-rtdb.firebaseio.com/Lampu.json";
+        $data = json_encode($status);
 
-    // Data yang akan dikirim
-    $data = json_encode($status);
+        $options = [
+            'http' => [
+                'method' => 'PUT',
+                'header' => 'Content-type: application/json',
+                'content' => $data
+            ]
+        ];
 
-    // Konfigurasi cURL
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        $context = stream_context_create($options);
+        $result = file_get_contents($firebase_url, false, $context);
 
-    // Eksekusi cURL
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    // Cek apakah permintaan berhasil
-    if ($httpCode == 200) {
-        echo json_encode(["success" => true, "status" => $status]);
+        if ($result !== false) {
+            echo json_encode(["success" => true]);
+        } else {
+            echo json_encode(["success" => false, "error" => "Gagal mengirim data ke Firebase"]);
+        }
     } else {
-        echo json_encode(["success" => false, "error" => "Gagal mengubah data di Firebase"]);
+        echo json_encode(["success" => false, "error" => "Status tidak valid"]);
     }
 } else {
     echo json_encode(["success" => false, "error" => "Parameter status tidak ditemukan"]);
