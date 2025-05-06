@@ -96,15 +96,18 @@
     <div class="sidebar">
         <h4><i class="bi bi-lightbulb-fill me-2"></i>Smart Lampu</h4>
         <a href="#"><i class="bi bi-speedometer2"></i> Dashboard</a>
-        <a href="#"><i class="bi bi-toggle-on"></i> Kontrol</a>
+        <a href="kontrol/index.php"><i class="bi bi-toggle-on"></i> Kontrol</a>
         <a href="laporan_sensor_lampu"><i class="bi bi-file-earmark-text"></i> Laporan Sensor Cahaya</a>
-        <a href="#"><i class="bi bi-file-earmark-text"></i> Laporan Perubahan Status</a>
     </div>
 
     <div class="main-content">
         <h2 class="mb-4">Kontrol Lampu IoT</h2>
 
-        <div id="statusLampu" class="status-box off">Lampu: Mengambil...</div>
+        <div id="statusLampuWrapper" class="d-flex justify-content-between align-items-center status-box off">
+    <div id="statusLampuText">Lampu: Mengambil...</div>
+    <button id="toggleLampuBtn" class="btn btn-sm btn-outline-light" onclick="toggleLampu()">Toggle</button>
+</div>
+
         <div id="sensorCahaya" class="status-box bg-secondary text-white">Sensor Cahaya: --</div>
         <h4>Sensor Cahaya</h4>
         <!-- Tambahkan pembungkus luar untuk centering -->
@@ -114,124 +117,156 @@
             </div>
         </div>
 
-        <div id="mode" class="status-box bg-info text-white">Mode: --</div>
-        <div id="manualCommand" class="status-box bg-warning text-dark">Perintah Manual: --</div>
-        <div id="timestamp" class="status-box bg-dark text-white">Waktu: --</div>
-
-        <div class="mt-4">
-            <button class="btn btn-success btn-custom" onclick="setManual('on')">
-                <i class="bi bi-toggle-on"></i> Nyalakan Manual
-            </button>
-            <button class="btn btn-danger btn-custom" onclick="setManual('off')">
-                <i class="bi bi-toggle-off"></i> Matikan Manual
-            </button>
-        </div>
-    </div>
-
+    <!-- Mode -->
+    <div id="mode" class="status-box bg-info text-white">Mode: --</div>
+    <div><button id="modeToggleBtn" class="status-box btn btn-info btn-sm" onclick="toggleMode()">Ubah Mode</button></div>
+    <div></div>
+    <div id="timestamp" class="status-box bg-dark text-white">Waktu: --</div>
     <script>
-    function fetchData() {
-        fetch('get_data.php')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("statusLampu").innerText = "Lampu: " + (data.lampu_status_212398 || "--")
-                    .toUpperCase();
-                document.getElementById("statusLampu").className = "status-box " + (data.lampu_status_212398 ===
-                    'on' ? 'on' : 'off');
+let gaugeChart;
 
-                document.getElementById("sensorCahaya").innerText = "Sensor Cahaya: " + (data.light_sensor_212398 ||
-                    "--");
-                document.getElementById("mode").innerText = "Mode: " + (data.mode_212398 || "--").toUpperCase();
-                document.getElementById("manualCommand").innerText = "Perintah Manual: " + (data
-                    .perintah_manual_212398 || "--").toUpperCase();
-                document.getElementById("timestamp").innerText = "Waktu: " + (data.timestanp || "--");
-                // Update gauge chart dengan nilai sensor cahaya
-                gaugeChart.data.datasets[0].data[0] = data.light_sensor_212398 || 0;
-                gaugeChart.update();
-
-            })
-            .catch(err => {
-                console.error("Gagal mengambil data:", err);
-            });
-
-    }
-
-    function setManual(status) {
-        fetch('set_manual.php?status=' + status)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    fetchData(); // refresh data
-                } else {
-                    alert("Gagal mengirim perintah manual");
-                }
-            });
-    }
-
-    setInterval(fetchData, 2000);
-    </script>
-
-    <script>
-    let gaugeChart;
-
-    function initGauge() {
-        const ctx = document.getElementById('gaugeChart').getContext('2d');
-        gaugeChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Cahaya'],
-                datasets: [{
-                    label: 'Light',
-                    data: [0, 100], // [nilai sensor, sisa]
-                    backgroundColor: ['#ffc107', '#e0e0e0'],
-                    borderWidth: 0,
-                    cutout: '80%'
-                }]
-            },
-            options: {
-                cutout: '80%',
-                rotation: -90,
-                circumference: 180,
-                responsive: true,
-                plugins: {
-                    doughnutlabel: {
-                        labels: [{
-                            text: '0',
-                            font: {
-                                size: 30,
-                                weight: 'bold'
-                            }
-                        }, {
-                            text: 'Lux'
-                        }]
-                    }
+function initGauge() {
+    const ctx = document.getElementById('gaugeChart').getContext('2d');
+    gaugeChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Cahaya'],
+            datasets: [{
+                label: 'Light',
+                data: [0, 100],
+                backgroundColor: ['#ffc107', '#e0e0e0'],
+                borderWidth: 0,
+                cutout: '80%'
+            }]
+        },
+        options: {
+            cutout: '80%',
+            rotation: -90,
+            circumference: 180,
+            responsive: true,
+            plugins: {
+                doughnutlabel: {
+                    labels: [{
+                        text: '0',
+                        font: {
+                            size: 30,
+                            weight: 'bold'
+                        }
+                    }, {
+                        text: 'Lux'
+                    }]
                 }
             }
+        }
+    });
+}
+
+function updateGauge(value) {
+    gaugeChart.data.datasets[0].data[0] = value;
+    gaugeChart.data.datasets[0].data[1] = 100 - value;
+    gaugeChart.options.plugins.doughnutlabel.labels[0].text = value;
+    gaugeChart.update();
+}
+
+function fetchData() {
+    fetch('get_data.php')
+        .then(res => res.json())
+        .then(data => {
+            const lampuStatus = (data.lampu_status_212398 || "--").toLowerCase();
+            const statusBox = document.getElementById("statusLampuWrapper");
+            const statusText = document.getElementById("statusLampuText");
+            const toggleBtn = document.getElementById("toggleLampuBtn");
+
+            statusText.innerText = "Lampu: " + lampuStatus.toUpperCase();
+            statusBox.className = "d-flex justify-content-between align-items-center status-box " + (lampuStatus === 'on' ? 'on' : 'off');
+
+            if (lampuStatus === 'on') {
+                toggleBtn.innerHTML = '<i class="bi bi-power"></i> Matikan';
+                toggleBtn.className = 'btn btn-sm btn-danger';
+                toggleBtn.dataset.status = 'off';
+            } else {
+                toggleBtn.innerHTML = '<i class="bi bi-lightbulb"></i> Nyalakan';
+                toggleBtn.className = 'btn btn-sm btn-success';
+                toggleBtn.dataset.status = 'on';
+            }
+
+            document.getElementById("sensorCahaya").innerText = "Sensor Cahaya: " + (data.light_sensor_212398 || "--");
+            document.getElementById("mode").innerText = "Mode: " + (data.mode_212398 || "--").toUpperCase();
+            document.getElementById("timestamp").innerText = "Waktu: " + (data.timestamp || "--");
+
+            let light = parseInt(data.light_sensor_212398) || 0;
+            updateGauge(light);
+
+            // Cek jika mode auto, maka nonaktifkan tombol
+            const mode = data.mode_212398 || "";
+            toggleLampuButtonState(mode);
+        })
+        .catch(err => {
+            console.error("Gagal mengambil data:", err);
         });
-    }
+}
 
-    function updateGauge(value) {
-        gaugeChart.data.datasets[0].data[0] = value;
-        gaugeChart.data.datasets[0].data[1] = 100 - value;
-        gaugeChart.options.plugins.doughnutlabel.labels[0].text = value;
-        gaugeChart.update();
+function toggleLampuButtonState(mode) {
+    const toggleBtn = document.getElementById("toggleLampuBtn");
+    if (mode === 'auto') {
+        // Nonaktifkan tombol jika mode auto
+        toggleBtn.disabled = true;
+        toggleBtn.innerHTML = '<i class="bi bi-lock"></i> Mode Auto (Tombol dinonaktifkan)';
+        toggleBtn.classList.add('btn-secondary');
+    } else {
+        // Aktifkan tombol jika mode manual
+        toggleBtn.disabled = false;
+        toggleBtn.classList.remove('btn-secondary');
+        toggleBtn.innerHTML = toggleBtn.dataset.status === 'on' ? '<i class="bi bi-lightbulb"></i> Nyalakan' : '<i class="bi bi-power"></i> Matikan';
     }
+}
 
-    window.onload = () => {
-        initGauge();
-        fetchData();
-        setInterval(fetchData, 2000);
-    };
+function setManual(status) {
+    fetch('set_manual.php?status=' + status)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                fetchData();
+            } else {
+                alert("Gagal mengirim perintah manual");
+            }
+        });
+}
 
-    function fetchData() {
-        fetch('get_data.php')
-            .then(res => res.json())
-            .then(data => {
-                let light = parseInt(data.light_sensor_212398) || 0;
-                updateGauge(light);
-                // sisipkan kode lainnya untuk update elemen teks
-            });
-    }
-    </script>
+function toggleMode() {
+    const currentMode = document.getElementById("mode").innerText.split(": ")[1].toLowerCase();
+    const newMode = currentMode === 'manual' ? 'auto' : 'manual';
+
+    // Kirim permintaan untuk mengubah mode di Firebase
+    fetch('set_mode.php?mode=' + newMode)  // Pastikan 'mode' ada di URL
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Mode berhasil diubah, perbarui UI
+                document.getElementById("mode").innerText = "Mode: " + newMode.charAt(0).toUpperCase() + newMode.slice(1);
+            } else {
+                alert("Gagal mengubah mode");
+            }
+        })
+        .catch(err => {
+            console.error("Gagal mengubah mode:", err);
+        });
+}
+
+
+
+function toggleLampu() {
+    const btn = document.getElementById("toggleLampuBtn");
+    const status = btn.dataset.status;
+    setManual(status);
+}
+
+window.onload = () => {
+    initGauge();
+    fetchData();
+    setInterval(fetchData, 2000);
+};
+</script>
 
 
 </body>
