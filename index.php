@@ -96,8 +96,8 @@
     <div class="sidebar">
         <h4><i class="bi bi-lightbulb-fill me-2"></i>Smart Lampu</h4>
         <a href="#"><i class="bi bi-speedometer2"></i> Dashboard</a>
-        <a href="kontrol/index.php"><i class="bi bi-toggle-on"></i> Kontrol</a>
-        <a href="laporan_sensor_lampu"><i class="bi bi-file-earmark-text"></i> Laporan Sensor Cahaya</a>
+        <a href="login.php"><i class="bi bi-toggle-on"></i> Log out</a>
+        <!-- <a href="laporan_sensor_lampu"><i class="bi bi-file-earmark-text"></i> Laporan Sensor Cahaya</a> -->
     </div>
 
     <div class="main-content">
@@ -109,7 +109,7 @@
         </div>
 
         <div class="status-box bg-warning text-white d-flex justify-content-between align-items-center">
-            <div>Ambang Batas: <span id="ambangBatasText">--</span></div>
+            <div>Ambang Batas Kegelapan: <span id="ambangBatasText">--</span></div>
             <div>
                 <input type="number" id="ambangBatasInput" class="form-control form-control-sm d-inline-block"
                     style="width: 80px;" />
@@ -173,7 +173,7 @@
 
         function updateGauge(value) {
             gaugeChart.data.datasets[0].data[0] = value;
-            gaugeChart.data.datasets[0].data[1] = 100 - value;
+            gaugeChart.data.datasets[0].data[1] = 1000 - value;
             gaugeChart.options.plugins.doughnutlabel.labels[0].text = value;
             gaugeChart.update();
         }
@@ -204,7 +204,7 @@
                     document.getElementById("sensorCahaya").innerText = "Sensor Cahaya: " + (data
                         .light_sensor_212398 || "--");
                     document.getElementById("mode").innerText = "Mode: " + (data.mode_212398 || "--").toUpperCase();
-                    document.getElementById("timestamp").innerText = "Waktu: " + (data.timestamp || "--");
+                    document.getElementById("timestamp").innerText = "Waktu: " + (data.timestanp || "--");
 
 
                     let light = parseInt(data.light_sensor_212398) || 0;
@@ -309,7 +309,7 @@
         window.onload = () => {
             initGauge();
             fetchData();
-            setInterval(fetchData, 2000);
+            setInterval(fetchData, 500);
         };
         </script>
 
