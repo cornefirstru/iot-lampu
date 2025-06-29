@@ -5,7 +5,7 @@ session_start();
 $host = "localhost";
 $user = "root"; // default phpMyAdmin user
 $pass = ""; // sesuaikan dengan password phpMyAdmin kamu
-$db   = "iot-lampu";
+$db   = "iot_lampu";
 
 // Buat koneksi
 $conn = new mysqli($host, $user, $pass, $db);
@@ -26,7 +26,7 @@ if (strlen($password) < 7) {
 }
 
 // Cari user di database
-$sql = "SELECT * FROM user WHERE username = ?";
+$sql = "SELECT * FROM users WHERE username = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("s", $username);
 $stmt->execute();
@@ -36,7 +36,7 @@ if ($result->num_rows === 1) {
     $row = $result->fetch_assoc();
     
     // Verifikasi password langsung (tanpa hash)
-    if ($password === $row['pass']) {
+    if ($password === $row['password']) {
         $_SESSION['username'] = $row['username'];
         header("Location: index.php");
         exit;

@@ -3,7 +3,7 @@
 $host = "localhost";
 $user = "root";
 $pass = "";
-$db   = "iot-lampu";
+$db   = "iot_lampu";
 $conn = new mysqli($host, $user, $pass, $db);
 
 if ($conn->connect_error) {
@@ -13,27 +13,30 @@ if ($conn->connect_error) {
 // Proses registrasi
 $message = "";
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = trim($_POST["username"]);
+    $nik = trim($_POST["nik"]);
     $password = trim($_POST["password"]);
     $confirm  = trim($_POST["confirm"]);
 
-    if (empty($username) || empty($password) || empty($confirm)) {
+    // Validasi NIK
+    if (empty($nik) || empty($password) || empty($confirm)) {
         $message = "Semua field harus diisi.";
+    } elseif (!ctype_digit($nik) || strlen($nik) != 16) {
+        $message = "NIK harus terdiri dari 16 digit angka.";
     } elseif ($password !== $confirm) {
         $message = "Konfirmasi password tidak cocok.";
     } else {
-        // Cek username sudah ada atau belum
+        // Cek NIK sudah ada atau belum
         $stmt = $conn->prepare("SELECT id FROM user WHERE username = ?");
-        $stmt->bind_param("s", $username);
+        $stmt->bind_param("s", $nik);
         $stmt->execute();
         $stmt->store_result();
 
         if ($stmt->num_rows > 0) {
-            $message = "Username sudah terdaftar.";
+            $message = "NIK sudah terdaftar.";
         } else {
-            // Simpan user baru ke kolom pass tanpa hash
+            // Simpan user baru ke kolom username (isi NIK) dan pass
             $stmt = $conn->prepare("INSERT INTO user (username, pass) VALUES (?, ?)");
-            $stmt->bind_param("ss", $username, $password);
+            $stmt->bind_param("ss", $nik, $password);
             if ($stmt->execute()) {
                 $message = "Registrasi berhasil. Silakan login.";
             } else {
@@ -127,8 +130,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <h2>Register Akun</h2>
         <?php if ($message) echo "<div class='message'>$message</div>"; ?>
         <form method="POST" action="">
-            <label>Username</label>
-            <input type="text" name="username" required>
+            <label>NIK</label>
+            <input type="text" name="nik" maxlength="16" pattern="\d{16}" required placeholder="Masukkan 16 digit NIK">
 
             <label>Password</label>
             <input type="password" name="password" required>

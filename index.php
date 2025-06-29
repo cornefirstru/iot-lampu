@@ -1,3 +1,10 @@
+<?php
+session_start();
+if (!isset($_SESSION['username'])) {
+    header("Location: login.php");
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="id">
 
@@ -97,12 +104,41 @@
         <h4><i class="bi bi-lightbulb-fill me-2"></i>Smart Lampu</h4>
         <a href="#"><i class="bi bi-speedometer2"></i> Dashboard</a>
         <a href="login.php"><i class="bi bi-toggle-on"></i> Log out</a>
-        <!-- <a href="laporan_sensor_lampu"><i class="bi bi-file-earmark-text"></i> Laporan Sensor Cahaya</a> -->
     </div>
 
     <div class="main-content">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div></div>
+                    <div>
+                        <a href="profil.php" style="text-decoration:none;">
+                            <span style="display: inline-flex; align-items: center;">
+                                <span style="
+                                    display: inline-flex;
+                                    justify-content: center;
+                                    align-items: center;
+                                    width: 38px;
+                                    height: 38px;
+                                    border-radius: 50%;
+                                    background: #e9ecef;
+                                    color: #212529;
+                                    font-weight: bold;
+                                    font-size: 18px;
+                                    margin-right: 10px;
+                                    border: 2px solid #adb5bd;
+                                ">
+                                    <?php
+                                        $username = htmlspecialchars($_SESSION['username']);
+                                        echo strtoupper(substr($username, 0, 1));
+                                    ?>
+                                </span>
+                                <span style="font-size:16px;color:#212529;">
+                                    <?php echo $username; ?>
+                                </span>
+                            </span>
+                        </a>
+                    </div>
+                </div>
         <h2 class="mb-4">Kontrol Lampu IoT</h2>
-
         <div id="statusLampuWrapper" class="d-flex justify-content-between align-items-center status-box off">
             <div id="statusLampuText">Lampu: Mengambil...</div>
             <button id="toggleLampuBtn" class="btn btn-sm btn-outline-light" onclick="toggleLampu()">Toggle</button>
